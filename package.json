@@ -1,9 +1,9 @@
 {
-  "name": "puppeteer-api-hosted",
+  "name": "puppeteer-api",
   "version": "1.0.0",
-  "main": "index.js",
-  "scripts": {
-    "start": "node api/proxy.js"
+  "type": "module",
+  "engines": {
+    "node": "18.x"
   },
   "dependencies": {
     "puppeteer": "^21.3.8"
