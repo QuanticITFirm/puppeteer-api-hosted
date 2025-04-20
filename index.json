@@ -1,0 +1,42 @@
+import express from "express";
+import cors from "cors";
+import puppeteer from "puppeteer";
+
+const app = express();
+app.use(cors());
+
+app.get("/api/puppeteer", async (req, res) => {
+  const search = req.query.search;
+  if (!search) return res.status(400).send("❌ Missing search query.");
+
+  try {
+    const browser = await puppeteer.launch({
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+    });
+
+    const page = await browser.newPage();
+    const url = `https://www.reddit.com/search/?q=${encodeURIComponent(search)}`;
+    await page.goto(url, { waitUntil: "domcontentloaded" });
+
+    const results = await page.evaluate(() => {
+      return Array.from(document.querySelectorAll("a[data-click-id='body']"))
+        .map(el => ({
+          title: el.innerText,
+          link: el.href
+        }))
+        .filter(post => post.title && post.link);
+    });
+
+    await browser.close();
+    res.json({ query: search, results });
+  } catch (error) {
+    console.error("Puppeteer error:", error);
+    res.status(500).send("❌ Puppeteer failed");
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
+});
