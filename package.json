@@ -1,0 +1,11 @@
+{
+  "name": "puppeteer-api-hosted",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node api/proxy.js"
+  },
+  "dependencies": {
+    "puppeteer": "^21.3.8"
+  }
+}
