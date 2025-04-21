@@ -8,12 +8,11 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// Debug ping route
+// Ping check
 app.get("/", (req, res) => {
-  res.send("✅ Puppeteer Proxy is working!");
+  res.send("✅ Puppeteer is alive!");
 });
 
-// Main keyword scraping logic
 app.post("/", async (req, res) => {
   const { url } = req.body;
   if (!url || !url.startsWith("http")) {
@@ -21,10 +20,18 @@ app.post("/", async (req, res) => {
   }
 
   try {
-    console.log(`🌐 Launching browser for URL: ${url}`);
     const browser = await puppeteer.launch({
       headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"]
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-accelerated-2d-canvas",
+        "--disable-gpu",
+        "--no-zygote",
+        "--single-process",
+        "--no-first-run"
+      ]
     });
 
     const page = await browser.newPage();
@@ -32,30 +39,18 @@ app.post("/", async (req, res) => {
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     );
 
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
-
-    // ✅ Wait for Reddit content (h3 = post titles)
-    try {
-      await page.waitForSelector("h3", { timeout: 15000 });
-    } catch (e) {
-      console.log("❌ Selector not found");
-      await browser.close();
-      return res
-        .status(500)
-        .json({ error: "Failed to extract content. Reddit may have changed layout." });
-    }
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 30000 });
 
     const html = await page.content();
     await browser.close();
-    console.log("✅ HTML successfully fetched.");
 
     res.send(html);
-  } catch (error) {
-    console.error("❌ Puppeteer error:", error);
+  } catch (err) {
+    console.error("❌ Error:", err);
     res.status(500).send("❌ Server error while fetching the page.");
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Puppeteer API running at http://localhost:${PORT}`);
+  console.log(`🚀 Puppeteer server running on http://localhost:${PORT}`);
 });
