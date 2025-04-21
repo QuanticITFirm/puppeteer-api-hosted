@@ -32,7 +32,18 @@ app.post("/", async (req, res) => {
       "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     );
 
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+
+    // ✅ Wait for Reddit content (h3 = post titles)
+    try {
+      await page.waitForSelector("h3", { timeout: 15000 });
+    } catch (e) {
+      console.log("❌ Selector not found");
+      await browser.close();
+      return res
+        .status(500)
+        .json({ error: "Failed to extract content. Reddit may have changed layout." });
+    }
 
     const html = await page.content();
     await browser.close();
