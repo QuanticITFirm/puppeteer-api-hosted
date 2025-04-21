@@ -1,33 +1,36 @@
-import express from "express";
-import puppeteer from "puppeteer";
+const express = require("express");
+const puppeteer = require("puppeteer");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Puppeteer Proxy is Running!");
+  res.send("✅ Puppeteer API is Live!");
 });
 
-app.get("/api/puppeteer", async (req, res) => {
-  const url = req.query.url;
-  if (!url) return res.status(400).send({ error: "Missing URL parameter" });
+app.post("/", async (req, res) => {
+  const { url } = req.body;
+  if (!url || !url.startsWith("http")) {
+    return res.status(400).json({ error: "Invalid or missing URL" });
+  }
 
   try {
     const browser = await puppeteer.launch({
-      headless: "new",
+      headless: true,
       args: ["--no-sandbox", "--disable-setuid-sandbox"]
     });
+
     const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "networkidle2", timeout: 20000 });
-    const content = await page.content();
+    await page.goto(url, { waitUntil: "domcontentloaded", timeout: 15000 });
+    const html = await page.content();
     await browser.close();
-    res.send(content);
+
+    res.send(html);
   } catch (err) {
-    console.error("Puppeteer error:", err);
-    res.status(500).send({ error: "Failed to fetch page" });
+    console.error("Puppeteer error:", err.message);
+    res.status(500).json({ error: "Failed to render page." });
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
